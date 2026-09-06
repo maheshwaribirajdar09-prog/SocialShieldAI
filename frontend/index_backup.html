@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>SocialShieldAI</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 25px;
+            border: none;
+            border-radius: 6px;
+            background: #222;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #444;
+        }
+
+        #loading {
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f1f1f1;
+            display: none;
+        }
+
+        .risk-title {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>SocialShieldAI</h1>
+
+    <div class="subtitle">
+        AI-Based Fake Profile Detection
+    </div>
+
+    <label>Follower Count</label>
+    <input type="number" id="followers" min="0">
+
+    <label>Following Count</label>
+    <input type="number" id="following" min="0">
+
+    <label>Biography Length</label>
+    <input type="number" id="bio" min="0">
+
+    <label>Media Count</label>
+    <input type="number" id="media" min="0">
+
+    <label>Has Profile Picture?</label>
+    <select id="profilePic">
+        <option value="1">Yes</option>
+        <option value="0">No</option>
+    </select>
+
+    <label>Private Account?</label>
+    <select id="private">
+        <option value="1">Yes</option>
+        <option value="0">No</option>
+    </select>
+
+    <label>Username Digit Count</label>
+    <input type="number" id="digits" min="0">
+
+    <label>Username Length</label>
+    <input type="number" id="usernameLength" min="0">
+
+    <button onclick="analyzeProfile()">
+        Analyze Profile
+    </button>
+
+    <div id="loading">
+        Analyzing profile...
+    </div>
+
+    <div id="result"></div>
+
+</div>
+
+
+<script>
+
+async function analyzeProfile() {
+
+    const resultBox = document.getElementById("result");
+    const loading = document.getElementById("loading");
+
+    resultBox.style.display = "none";
+    loading.style.display = "block";
+
+    const data = {
+
+        userFollowerCount:
+            Number(document.getElementById("followers").value),
+
+        userFollowingCount:
+            Number(document.getElementById("following").value),
+
+        userBiographyLength:
+            Number(document.getElementById("bio").value),
+
+        userMediaCount:
+            Number(document.getElementById("media").value),
+
+        userHasProfilPic:
+            Number(document.getElementById("profilePic").value),
+
+        userIsPrivate:
+            Number(document.getElementById("private").value),
+
+        usernameDigitCount:
+            Number(document.getElementById("digits").value),
+
+        usernameLength:
+            Number(document.getElementById("usernameLength").value)
+    };
+
+
+    try {
+
+        const response = await fetch(
+            "http://127.0.0.1:8000/predict",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify(data)
+            }
+        );
+
+
+        const result = await response.json();
+
+        loading.style.display = "none";
+        resultBox.style.display = "block";
+
+
+        if (result.error) {
+
+            resultBox.innerHTML = `
+                <div class="error">
+                    Error: ${result.error}
+                </div>
+            `;
+
+            return;
+        }
+
+
+        let riskHTML = "";
+
+        if (result.risk_factors &&
+            result.risk_factors.length > 0) {
+
+            riskHTML = `
+                <div class="risk-title">
+                    Risk Analysis:
+                </div>
+
+                <ul>
+                    ${result.risk_factors
+                        .map(factor => `<li>⚠ ${factor}</li>`)
+                        .join("")}
+                </ul>
+            `;
+        }
+
+
+        resultBox.innerHTML = `
+
+            <h2>
+                Prediction: ${result.prediction}
+            </h2>
+
+            <p>
+                <strong>Confidence:</strong>
+                ${result.confidence}%
+            </p>
+
+            <p>
+                <strong>Confidence Level:</strong>
+                ${result.confidence_level}
+            </p>
+
+            ${riskHTML}
+
+        `;
+
+    }
+
+    catch (error) {
+
+        loading.style.display = "none";
+        resultBox.style.display = "block";
+
+        resultBox.innerHTML = `
+            <div class="error">
+                Unable to connect to the SocialShieldAI server.
+                <br><br>
+                Make sure the backend is running.
+            </div>
+        `;
+    }
+
+}
+
+</script>
+
+</body>
+</html>
