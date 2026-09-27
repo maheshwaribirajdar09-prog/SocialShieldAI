@@ -150,13 +150,35 @@ class ApiService {
   }
 
   return Map<String, dynamic>.from(data);
+  }
 }
 // ============================================================
 // 1. SPLASH SCREEN
 // ============================================================
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    Future.delayed(const Duration(seconds: 5), () {
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+        ),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -201,27 +223,6 @@ class SplashScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     color: Colors.black87,
-                  ),
-                ),
-
-                const SizedBox(height: 50),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const LoginScreen(),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      'NEXT',
-                      style: TextStyle(fontSize: 17),
-                    ),
                   ),
                 ),
               ],
@@ -1093,7 +1094,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ],
-        ),gi
+        )
       ),
     );
   }
@@ -1475,7 +1476,7 @@ class ProfileDetailsScreen extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => AnalysisLoadingScreen(
           userId: userId,
-          profile: profile,
+          username: profile.username,
         ),
       ),
     );
@@ -1655,10 +1656,18 @@ class _AnalysisLoadingScreenState
         context,
         MaterialPageRoute(
           builder: (_) => AnalysisResultScreen(
-            userId: widget.userId,
-            username: widget.username,
-            result: result,
-          ),
+  userId: widget.userId,
+  profile: ProfileData(
+    username: widget.username,
+    followers: 0,
+    following: 0,
+    biography: '',
+    mediaCount: 0,
+    hasProfilePicture: 0,
+    isPrivate: 0,
+  ),
+  result: result,
+),
         ),
       );
     } catch (e) {
