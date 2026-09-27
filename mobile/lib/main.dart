@@ -22,7 +22,7 @@ void main() {
 // local IPv4 address, for example:
 // const String apiBaseUrl = '192.168.1.105:8000';
 
-const String apiBaseUrl = '192.168.1.105:8000';
+const String apiBaseUrl = 'http://192.168.1.105:8000';
 
 
 // ============================================================
@@ -118,35 +118,39 @@ class ProfileData {
 // ============================================================
 
 class ApiService {
-  Future<Map<String, dynamic>> analyzeProfile(
-    ProfileData profile,
-  ) async {
-    final response = await http
-        .post(
-          Uri.parse('$apiBaseUrl/predict'),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode(profile.toJson()),
-        )
-        .timeout(const Duration(seconds: 30));
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Server error: ${response.statusCode}',
+  Future<Map<String, dynamic>> analyzeXProfile(
+  String username,
+) async {
+  final response = await http
+      .post(
+        Uri.parse('$apiBaseUrl/predict'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'username': username,
+        }),
+      )
+      .timeout(
+        const Duration(seconds: 30),
       );
-    }
 
-    final data = jsonDecode(response.body);
-
-    if (data['error'] != null) {
-      throw Exception(data['error'].toString());
-    }
-
-    return Map<String, dynamic>.from(data);
+  if (response.statusCode != 200) {
+    throw Exception(
+      'Server error: ${response.statusCode}',
+    );
   }
-}
 
+  final data = jsonDecode(response.body);
+
+  if (data['error'] != null) {
+    throw Exception(
+      data['error'].toString(),
+    );
+  }
+
+  return Map<String, dynamic>.from(data);
+}
 // ============================================================
 // 1. SPLASH SCREEN
 // ============================================================
@@ -1089,7 +1093,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ],
-        ),
+        ),gi
       ),
     );
   }
@@ -1118,10 +1122,10 @@ class TestingLabScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 25),
 
             const Icon(
-              Icons.biotech,
+              Icons.search,
               size: 75,
               color: Colors.indigo,
             ),
@@ -1129,7 +1133,7 @@ class TestingLabScreen extends StatelessWidget {
             const SizedBox(height: 15),
 
             const Text(
-              'AI Profile Testing Lab',
+              'Analyze X Profile',
               style: TextStyle(
                 fontSize: 25,
                 fontWeight: FontWeight.bold,
@@ -1139,9 +1143,10 @@ class TestingLabScreen extends StatelessWidget {
             const SizedBox(height: 10),
 
             const Text(
-              'Test sample profiles or create your own '
-              'profile to analyze it using AI.',
+              'Paste a public X profile URL and let '
+              'SocialShieldAI analyze it using AI.',
               textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
             ),
 
             const SizedBox(height: 35),
@@ -1150,17 +1155,16 @@ class TestingLabScreen extends StatelessWidget {
               width: double.infinity,
               height: 60,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.people),
+                icon: const Icon(Icons.link),
                 label: const Text(
-                  'TEST SAMPLE PROFILES',
+                  'PASTE X PROFILE URL',
                   style: TextStyle(fontSize: 16),
                 ),
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          SampleProfilesScreen(
+                      builder: (_) => XProfileUrlScreen(
                         userId: userId,
                       ),
                     ),
@@ -1169,28 +1173,31 @@ class TestingLabScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 25),
 
-            SizedBox(
-              width: double.infinity,
-              height: 60,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.person_add),
-                label: const Text(
-                  'CREATE YOUR OWN PROFILE',
-                  style: TextStyle(fontSize: 16),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          CreateProfileScreen(
-                        userId: userId,
+            Card(
+              color: Colors.indigo.shade50,
+              child: const Padding(
+                padding: EdgeInsets.all(15),
+                child: Row(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.indigo,
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Example:\n'
+                        'https://x.com/username\n\n'
+                        'Only public X profile URLs are '
+                        'supported.',
                       ),
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
             ),
           ],
@@ -1199,377 +1206,208 @@ class TestingLabScreen extends StatelessWidget {
     );
   }
 }
-
 // ============================================================
-// SAMPLE DATA
-// ============================================================
-
-final List<ProfileData> sampleProfiles = [
-  ProfileData(
-    username: 'john_doe',
-    followers: 258,
-    following: 238,
-    biography: '',
-    mediaCount: 0,
-    hasProfilePicture: 1,
-    isPrivate: 0,
-  ),
-
-  ProfileData(
-    username: 'user123456',
-    followers: 25,
-    following: 1937,
-    biography: '',
-    mediaCount: 0,
-    hasProfilePicture: 1,
-    isPrivate: 1,
-  ),
-
-  ProfileData(
-    username: 'travellover',
-    followers: 2207,
-    following: 593,
-    biography:
-        'Travel enthusiast and photographer',
-    mediaCount: 198,
-    hasProfilePicture: 1,
-    isPrivate: 0,
-  ),
-
-  ProfileData(
-    username: 'fake98765',
-    followers: 15,
-    following: 399,
-    biography: '',
-    mediaCount: 0,
-    hasProfilePicture: 0,
-    isPrivate: 0,
-  ),
-];
-
-// ============================================================
-// 8. SAMPLE PROFILES
+// 8. X PROFILE URL
 // ============================================================
 
-class SampleProfilesScreen extends StatelessWidget {
+class XProfileUrlScreen extends StatefulWidget {
   final int userId;
 
-  const SampleProfilesScreen({
+  const XProfileUrlScreen({
     super.key,
     required this.userId,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sample Profiles'),
-        centerTitle: true,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(15),
-        itemCount: sampleProfiles.length,
-        itemBuilder: (context, index) {
-          final profile = sampleProfiles[index];
-
-          return Card(
-            margin: const EdgeInsets.only(bottom: 15),
-            elevation: 3,
-            child: ListTile(
-              contentPadding:
-                  const EdgeInsets.all(15),
-              leading: CircleAvatar(
-                backgroundColor:
-                    Colors.indigo.shade50,
-                child: const Icon(
-                  Icons.person,
-                  color: Colors.indigo,
-                ),
-              ),
-              title: Text(
-                '@${profile.username}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: Text(
-                '${profile.followers} followers • '
-                '${profile.following} following',
-              ),
-              trailing: const Icon(
-                Icons.arrow_forward_ios,
-                size: 18,
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ProfileDetailsScreen(
-                      userId: userId,
-                      profile: profile,
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
+  State<XProfileUrlScreen> createState() =>
+      _XProfileUrlScreenState();
 }
 
-// ============================================================
-// 9. CREATE YOUR OWN PROFILE
-// ============================================================
+class _XProfileUrlScreenState
+    extends State<XProfileUrlScreen> {
+  final urlController = TextEditingController();
 
-class CreateProfileScreen extends StatefulWidget {
-  final int userId;
+  bool loading = false;
 
-  const CreateProfileScreen({
-    super.key,
-    required this.userId,
-  });
+  String? extractUsername(String url) {
+    try {
+      final uri = Uri.parse(url.trim());
 
-  @override
-  State<CreateProfileScreen> createState() =>
-      _CreateProfileScreenState();
-}
+      if (uri.scheme != 'https' &&
+          uri.scheme != 'http') {
+        return null;
+      }
 
-class _CreateProfileScreenState
-    extends State<CreateProfileScreen> {
-  final usernameController =
-      TextEditingController();
+      if (uri.host != 'x.com' &&
+          uri.host != 'www.x.com' &&
+          uri.host != 'twitter.com' &&
+          uri.host != 'www.twitter.com') {
+        return null;
+      }
 
-  final followersController =
-      TextEditingController();
+      final segments = uri.pathSegments;
 
-  final followingController =
-      TextEditingController();
+      if (segments.isEmpty) {
+        return null;
+      }
 
-  final biographyController =
-      TextEditingController();
+      final username = segments.first;
 
-  final mediaController =
-      TextEditingController();
+      // Reject X/Twitter system pages.
+      const blockedPaths = [
+        'home',
+        'explore',
+        'search',
+        'notifications',
+        'messages',
+        'settings',
+        'i',
+      ];
 
-  int hasProfilePicture = 1;
-  int isPrivate = 0;
+      if (blockedPaths.contains(
+        username.toLowerCase(),
+      )) {
+        return null;
+      }
 
-  int? positiveNumber(String text) {
-    return int.tryParse(text.trim());
+      if (!RegExp(
+        r'^[A-Za-z0-9_]{1,15}$',
+      ).hasMatch(username)) {
+        return null;
+      }
+
+      return username;
+    } catch (_) {
+      return null;
+    }
   }
 
-  void continueToDetails() {
-    final username =
-        usernameController.text.trim();
+  void continueToAnalysis() {
+    final url = urlController.text.trim();
 
-    final followers =
-        positiveNumber(followersController.text);
-
-    final following =
-        positiveNumber(followingController.text);
-
-    final media =
-        positiveNumber(mediaController.text);
-
-    final biography =
-        biographyController.text;
-
-    if (username.isEmpty ||
-        followers == null ||
-        following == null ||
-        media == null) {
+    if (url.isEmpty) {
       showMessage(
         context,
-        'Please enter valid profile details.',
+        'Please paste an X profile URL.',
       );
       return;
     }
 
-    if (followers < 0 ||
-        following < 0 ||
-        media < 0) {
+    final username = extractUsername(url);
+
+    if (username == null) {
       showMessage(
         context,
-        'Values cannot be negative.',
+        'Please enter a valid X profile URL.',
       );
       return;
     }
 
-    if (username.length > 50) {
-      showMessage(
-        context,
-        'Username is too long.',
-      );
-      return;
-    }
-
-    final profile = ProfileData(
-      username: username,
-      followers: followers,
-      following: following,
-      biography: biography,
-      mediaCount: media,
-      hasProfilePicture: hasProfilePicture,
-      isPrivate: isPrivate,
-    );
+    // Temporary step.
+    // Later this will call the backend,
+    // which will fetch the actual X profile data.
 
     Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ProfileDetailsScreen(
-          userId: widget.userId,
-          profile: profile,
-        ),
-      ),
-    );
+  context,
+  MaterialPageRoute(
+    builder: (_) => AnalysisLoadingScreen(
+      userId: widget.userId,
+      username: username,
+    ),
+  ),
+);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Profile'),
+        title: const Text('X Profile'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            const SizedBox(height: 25),
+
             const Icon(
-              Icons.person_search,
-              size: 70,
+              Icons.link,
+              size: 75,
               color: Colors.indigo,
             ),
 
             const SizedBox(height: 20),
 
             const Text(
-              'Enter Profile Details',
+              'Paste X Profile URL',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 25,
                 fontWeight: FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 25),
+            const SizedBox(height: 12),
 
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(
-                labelText: 'Username',
-                prefixIcon:
-                    Icon(Icons.alternate_email),
-              ),
+            const Text(
+              'Enter the URL of the public X profile '
+              'you want to analyze.',
+              textAlign: TextAlign.center,
             ),
 
-            const SizedBox(height: 15),
+            const SizedBox(height: 30),
 
             TextField(
-              controller: followersController,
-              keyboardType: TextInputType.number,
+              controller: urlController,
+              keyboardType: TextInputType.url,
               decoration: const InputDecoration(
-                labelText: 'Followers',
-                prefixIcon:
-                    Icon(Icons.people),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            TextField(
-              controller: followingController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Following',
-                prefixIcon:
-                    Icon(Icons.person_add),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            TextField(
-              controller: biographyController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Biography',
+                labelText: 'X Profile URL',
                 hintText:
-                    'Enter profile biography',
-                prefixIcon:
-                    Icon(Icons.description),
+                    'https://x.com/username',
+                prefixIcon: Icon(Icons.link),
               ),
             ),
 
             const SizedBox(height: 15),
 
-            TextField(
-              controller: mediaController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Posts / Media Count',
-                prefixIcon:
-                    Icon(Icons.photo_library),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Example: https://x.com/username',
+                style: TextStyle(
+                  color: Colors.grey,
+                ),
               ),
             ),
 
-            const SizedBox(height: 20),
-
-            Card(
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    title: const Text(
-                      'Profile Picture',
-                    ),
-                    subtitle: Text(
-                      hasProfilePicture == 1
-                          ? 'Available'
-                          : 'Not available',
-                    ),
-                    value:
-                        hasProfilePicture == 1,
-                    onChanged: (value) {
-                      setState(() {
-                        hasProfilePicture =
-                            value ? 1 : 0;
-                      });
-                    },
-                  ),
-
-                  SwitchListTile(
-                    title: const Text(
-                      'Private Account',
-                    ),
-                    subtitle: Text(
-                      isPrivate == 1
-                          ? 'Private'
-                          : 'Public',
-                    ),
-                    value: isPrivate == 1,
-                    onChanged: (value) {
-                      setState(() {
-                        isPrivate =
-                            value ? 1 : 0;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
+            const SizedBox(height: 30),
 
             SizedBox(
               width: double.infinity,
               height: 55,
-              child: ElevatedButton(
-                onPressed: continueToDetails,
-                child: const Text(
-                  'VIEW PROFILE DETAILS',
+              child: ElevatedButton.icon(
+                onPressed:
+                    loading ? null : continueToAnalysis,
+                icon: const Icon(Icons.psychology),
+                label: const Text(
+                  'ANALYZE PROFILE',
                   style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
+            Card(
+              color: Colors.indigo.shade50,
+              child: const Padding(
+                padding: EdgeInsets.all(15),
+                child: Text(
+                  'SocialShieldAI will automatically '
+                  'retrieve available profile information '
+                  'through the backend before running '
+                  'the AI model.',
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
@@ -1579,6 +1417,8 @@ class _CreateProfileScreenState
     );
   }
 }
+
+
 
 // ============================================================
 // 10. PROFILE DETAILS
@@ -1757,12 +1597,12 @@ class ProfileDetailsScreen extends StatelessWidget {
 
 class AnalysisLoadingScreen extends StatefulWidget {
   final int userId;
-  final ProfileData profile;
+  final String username;
 
   const AnalysisLoadingScreen({
     super.key,
     required this.userId,
-    required this.profile,
+    required this.username,
   });
 
   @override
@@ -1772,9 +1612,10 @@ class AnalysisLoadingScreen extends StatefulWidget {
 
 class _AnalysisLoadingScreenState
     extends State<AnalysisLoadingScreen> {
+
   final ApiService apiService = ApiService();
 
-  String status = 'Preparing profile data...';
+  String status = 'Preparing X profile...';
 
   @override
   void initState() {
@@ -1790,13 +1631,12 @@ class _AnalysisLoadingScreenState
     if (!mounted) return;
 
     setState(() {
-      status = 'Sending data to AI model...';
+      status = 'Fetching X profile data...';
     });
 
     try {
-      final result =
-          await apiService.analyzeProfile(
-        widget.profile,
+      final result = await apiService.analyzeXProfile(
+        widget.username,
       );
 
       if (!mounted) return;
@@ -1816,7 +1656,7 @@ class _AnalysisLoadingScreenState
         MaterialPageRoute(
           builder: (_) => AnalysisResultScreen(
             userId: widget.userId,
-            profile: widget.profile,
+            username: widget.username,
             result: result,
           ),
         ),
@@ -1828,8 +1668,8 @@ class _AnalysisLoadingScreenState
 
       showMessage(
         context,
-        'Could not connect to AI server.\n'
-        'Make sure FastAPI is running.',
+        'Could not analyze the X profile.\n'
+        'Make sure the FastAPI server is running.',
       );
     }
   }
@@ -1861,7 +1701,7 @@ class _AnalysisLoadingScreenState
               const SizedBox(height: 30),
 
               const Text(
-                'AI is analyzing the profile...',
+                'AI is analyzing the X profile...',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 22,
@@ -1874,6 +1714,16 @@ class _AnalysisLoadingScreenState
               Text(
                 status,
                 textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 10),
+
+              Text(
+                '@${widget.username}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.indigo,
+                ),
               ),
             ],
           ),

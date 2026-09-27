@@ -1,30 +1,42 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
-import sys
+from dotenv import dotenv_values
+import requests
 import os
 
-# Add ML folder to Python path
-ML_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "ml")
-)
 
-sys.path.append(ML_PATH)
+# =========================================================
+# LOAD X BEARER TOKEN
+# =========================================================
 
-from predict import detect_profile
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ENV_PATH = os.path.join(BASE_DIR, ".env")
 
+env = dotenv_values(ENV_PATH)
+
+X_BEARER_TOKEN = env.get("X_BEARER_TOKEN")
+
+if not X_BEARER_TOKEN:
+    raise RuntimeError(
+        f"X_BEARER_TOKEN is missing from: {ENV_PATH}"
+    )
+
+
+# =========================================================
+# FASTAPI APP
+# =========================================================
 
 app = FastAPI(
     title="SocialShieldAI API",
-    description="AI-Based Fake Profile Detection API",
-    version="1.0"
+    description="X Profile Analysis API for SocialShieldAI",
+    version="1.0.0"
 )
 
 
-# -----------------------------
+# =========================================================
 # CORS
-# -----------------------------
+# =========================================================
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,64 +47,83 @@ app.add_middleware(
 )
 
 
-# -----------------------------
-# PROFILE DATA
-# -----------------------------
-
-class Profile(BaseModel):
-
-    userFollowerCount: int
-    userFollowingCount: int
-    userBiographyLength: int
-    userMediaCount: int
-    userHasProfilPic: int
-    userIsPrivate: int
-    usernameDigitCount: int
-    usernameLength: int
-
-
-# -----------------------------
-# HOME
-# -----------------------------
+# =========================================================
+# HOME / HEALTH CHECK
+# =========================================================
 
 @app.get("/")
 def home():
-
     return {
         "message": "SocialShieldAI API is running",
         "status": "OK"
     }
 
 
-# -----------------------------
-# PREDICTION
-# -----------------------------
+# =========================================================
+# GET X PROFILE
+# =========================================================
 
-@app.post("/predict")
-def predict(profile: Profile):
+def get_x_profile(username: str):
+
+    username = username.strip().lstrip("@")
+
+    url = f"https://api.x.com/2/users/by/username/{username}"
+
+    headers = {
+        "Authorization": f"Bearer {X_BEARER_TOKEN}"
+    }
+
+    params = {
+        "user.fields": (
+            "description,"
+            "created_at,"
+            "profile_image_url,"
+            "protected,"
+            "public_metrics"
+        )
+    }
 
     try:
-
-        result, confidence, confidence_level, risk_factors = detect_profile(
-            profile.userFollowerCount,
-            profile.userFollowingCount,
-            profile.userBiographyLength,
-            profile.userMediaCount,
-            profile.userHasProfilPic,
-            profile.userIsPrivate,
-            profile.usernameDigitCount,
-            profile.usernameLength
+        response = requests.get(
+            url,
+            headers=headers,
+            params=params,
+            timeout=15
         )
 
-        return {
-            "prediction": result,
-            "confidence": confidence,
-            "confidence_level": confidence_level,
-            "risk_factors": risk_factors
-        }
+    except requests.RequestException as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not connect to X API: {str(e)}"
+        )
 
-    except ValueError as e:
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=f"X API error: {response.text}"
+        )
 
-        return {
-            "error": str(e)
-        }
+    data = response.json()
+
+    if "data" not in data:
+        raise HTTPException(
+            status_code=404,
+            detail="X profile not found."
+        )
+
+    return data["data"]
+
+
+# =========================================================
+# TEST X PROFILE
+# =========================================================
+
+@app.get("/test-x/{username}")
+def test_x(username: str):
+
+    profile = get_x_profile(username)
+
+    return {
+        "message": "X API connection successful",
+        "profile": profile
+    }
