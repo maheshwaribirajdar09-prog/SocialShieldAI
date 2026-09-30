@@ -72,9 +72,10 @@ for profile in test_profiles:
 
     name = profile.pop("name")
 
-    result, confidence, level = detect_profile(**profile)
+    result, confidence, level, risk_factors = detect_profile(**profile)
 
     print("\nProfile:", name)
     print("Prediction:", result)
     print("Confidence:", round(confidence, 2), "%")
     print("Confidence Level:", level)
+print("Risk Factors:", risk_factors)

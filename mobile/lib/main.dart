@@ -22,8 +22,7 @@ void main() {
 // local IPv4 address, for example:
 // const String apiBaseUrl = '192.168.1.105:8000';
 
-const String apiBaseUrl = 'http://192.168.1.105:8000';
-
+const String apiBaseUrl = 'http://192.168.31.19:8000';
 
 // ============================================================
 // APP

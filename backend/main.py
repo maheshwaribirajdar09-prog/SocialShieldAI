@@ -1,67 +1,41 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-
+from pydantic import BaseModel
 from dotenv import dotenv_values
 import requests
 import os
-
-
-# =========================================================
-# LOAD X BEARER TOKEN
-# =========================================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_PATH = os.path.join(BASE_DIR, ".env")
 
 env = dotenv_values(ENV_PATH)
-
 X_BEARER_TOKEN = env.get("X_BEARER_TOKEN")
+from database import create_tables
 
-if not X_BEARER_TOKEN:
-    raise RuntimeError(
-        f"X_BEARER_TOKEN is missing from: {ENV_PATH}"
-    )
+import sys
 
+sys.path.insert(
+    0,
+    r"C:\Users\sanskruti\OneDrive\Desktop\SocialShieldAI\ml"
+)
 
-# =========================================================
-# FASTAPI APP
-# =========================================================
-
+from predict import detect_profile
 app = FastAPI(
-    title="SocialShieldAI API",
-    description="X Profile Analysis API for SocialShieldAI",
-    version="1.0.0"
+    title="SocialShieldAI Backend",
+    description="Backend for X Profile Detection",
+    version="1.0"
 )
 
 
-# =========================================================
-# CORS
-# =========================================================
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Initialize SQLite database
+create_tables()
 
 
-# =========================================================
-# HOME / HEALTH CHECK
-# =========================================================
+# ============================================================
+# REQUEST MODEL
+# ============================================================
 
-@app.get("/")
-def home():
-    return {
-        "message": "SocialShieldAI API is running",
-        "status": "OK"
-    }
-
-
-# =========================================================
-# GET X PROFILE
-# =========================================================
+class PredictRequest(BaseModel):
+    username: str
 
 def get_x_profile(username: str):
 
@@ -113,17 +87,103 @@ def get_x_profile(username: str):
 
     return data["data"]
 
+def profile_to_ml_features(profile: dict):
+    username = profile.get("username", "")
 
-# =========================================================
-# TEST X PROFILE
-# =========================================================
+    public_metrics = profile.get("public_metrics") or {}
 
-@app.get("/test-x/{username}")
-def test_x(username: str):
+    followers = public_metrics.get("followers_count", 0)
+    following = public_metrics.get("following_count", 0)
+    media_count = public_metrics.get("tweet_count", 0)
+
+    biography = profile.get("description") or ""
+
+    profile_picture = 1 if profile.get("profile_image_url") else 0
+
+    is_private = 1 if profile.get("protected") else 0
+
+    username_digit_count = sum(
+        character.isdigit()
+        for character in username
+    )
+
+    username_length = len(username)
+
+    return {
+        "userFollowerCount": followers,
+        "userFollowingCount": following,
+        "userBiographyLength": len(biography),
+        "userMediaCount": media_count,
+        "userHasProfilPic": profile_picture,
+        "userIsPrivate": is_private,
+        "usernameDigitCount": username_digit_count,
+        "usernameLength": username_length
+    }
+
+def analyze_profile_with_ml(profile: dict):
+    features = profile_to_ml_features(profile)
+
+    result, confidence, confidence_level, risk_factors = detect_profile(
+        **features
+    )
+
+    return {
+        "prediction": result,
+        "confidence": float(confidence),
+        "confidence_level": confidence_level,
+        "risk_factors": risk_factors
+    }
+
+
+# ============================================================
+# HOME
+# ============================================================
+
+@app.get("/")
+def home():
+    return {
+        "message": "SocialShieldAI Backend is running"
+    }
+
+
+# ============================================================
+# HEALTH
+# ============================================================
+
+@app.get("/health")
+def health():
+    return {
+        "status": "OK"
+    }
+
+
+# ============================================================
+# PREDICT
+# ============================================================
+
+@app.post("/predict")
+def predict(request: PredictRequest):
+
+    username = request.username.strip().lstrip("@")
+
+    if not username:
+        return {
+            "error": "Username is required"
+        }
 
     profile = get_x_profile(username)
 
+    result = analyze_profile_with_ml(profile)
+
+    features = profile_to_ml_features(profile)
+
     return {
-        "message": "X API connection successful",
-        "profile": profile
+        "username": username,
+        "followers": features["userFollowerCount"],
+        "following": features["userFollowingCount"],
+        "biographyLength": features["userBiographyLength"],
+        "mediaCount": features["userMediaCount"],
+        "hasProfilePicture": features["userHasProfilPic"],
+        "isPrivate": features["userIsPrivate"],
+        **result
     }
