@@ -110,4 +110,4 @@ print(classification_report(
 # Save the trained model
 joblib.dump(model, "fake_profile_model.pkl")
 
-print("\nModel saved successfully!")
+print("\nModel saved successfully!")-+

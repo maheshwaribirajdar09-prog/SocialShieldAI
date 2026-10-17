@@ -14,15 +14,11 @@ void main() {
 // API CONFIGURATION
 // ============================================================
 
-// IMPORTANT:
-// For Android Emulator use:
-// const String apiBaseUrl = '192.168.1.105:8000';
-//
-// For your physical phone, replace this with your LAPTOP'S
-// local IPv4 address, for example:
-// const String apiBaseUrl = '192.168.1.105:8000';
+// For your physical phone, use your laptop's local IPv4 address.
+// Example:
+// const String apiBaseUrl = 'http://192.168.1.103:8000';
 
-const String apiBaseUrl = 'http://192.168.31.19:8000';
+const String apiBaseUrl = 'http://192.135.156.31:8000';
 
 // ============================================================
 // APP
@@ -60,7 +56,9 @@ class SocialShieldAI extends StatelessWidget {
 
 void showMessage(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(message)),
+    SnackBar(
+      content: Text(message),
+    ),
   );
 }
 
@@ -92,7 +90,10 @@ class ProfileData {
   int get usernameDigitCount {
     return username
         .split('')
-        .where((character) => RegExp(r'[0-9]').hasMatch(character))
+        .where(
+          (character) =>
+              RegExp(r'[0-9]').hasMatch(character),
+        )
         .length;
   }
 
@@ -118,39 +119,50 @@ class ProfileData {
 
 class ApiService {
   Future<Map<String, dynamic>> analyzeXProfile(
-  String username,
-) async {
-  final response = await http
-      .post(
-        Uri.parse('$apiBaseUrl/predict'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'username': username,
-        }),
-      )
-      .timeout(
-        const Duration(seconds: 30),
+    String username,
+    int userId,
+  ) async {
+    final response = await http
+        .post(
+          Uri.parse('$apiBaseUrl/predict'),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'username': username,
+            'user_id': userId,
+          }),
+        )
+        .timeout(
+          const Duration(seconds: 30),
+        );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Server error: ${response.statusCode}',
       );
+    }
 
-  if (response.statusCode != 200) {
-    throw Exception(
-      'Server error: ${response.statusCode}',
-    );
-  }
+    final decoded = jsonDecode(response.body);
 
-  final data = jsonDecode(response.body);
+    if (decoded is! Map) {
+      throw Exception(
+        'Invalid response received from server.',
+      );
+    }
 
-  if (data['error'] != null) {
-    throw Exception(
-      data['error'].toString(),
-    );
-  }
+    final data = Map<String, dynamic>.from(decoded);
 
-  return Map<String, dynamic>.from(data);
+    if (data['error'] != null) {
+      throw Exception(
+        data['error'].toString(),
+      );
+    }
+
+    return data;
   }
 }
+
 // ============================================================
 // 1. SPLASH SCREEN
 // ============================================================
@@ -159,7 +171,8 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  State<SplashScreen> createState() =>
+      _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
@@ -167,16 +180,19 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    Future.delayed(const Duration(seconds: 5), () {
-      if (!mounted) return;
+    Future.delayed(
+      const Duration(seconds: 5),
+      () {
+        if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const LoginScreen(),
-        ),
-      );
-    });
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const LoginScreen(),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -187,7 +203,8 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Padding(
             padding: const EdgeInsets.all(30),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment:
+                  MainAxisAlignment.center,
               children: [
                 Container(
                   height: 120,
@@ -202,9 +219,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     color: Colors.indigo,
                   ),
                 ),
-
                 const SizedBox(height: 30),
-
                 const Text(
                   'SocialShieldAI',
                   style: TextStyle(
@@ -213,9 +228,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     color: Colors.indigo,
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 const Text(
                   'Secure Social Media with AI',
                   textAlign: TextAlign.center,
@@ -241,14 +254,19 @@ class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<LoginScreen> createState() =>
+      _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final usernameController = TextEditingController();
-  final passwordController = TextEditingController();
+  final usernameController =
+      TextEditingController();
 
-  final DatabaseHelper dbHelper = DatabaseHelper();
+  final passwordController =
+      TextEditingController();
+
+  final DatabaseHelper dbHelper =
+      DatabaseHelper();
 
   bool hidePassword = true;
   bool loading = false;
@@ -259,7 +277,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final password = passwordController.text;
 
-    if (usernameOrEmail.isEmpty || password.isEmpty) {
+    if (usernameOrEmail.isEmpty ||
+        password.isEmpty) {
       showMessage(
         context,
         'Please enter login details.',
@@ -312,15 +331,12 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           children: [
             const SizedBox(height: 25),
-
             const Icon(
               Icons.lock_outline,
               size: 75,
               color: Colors.indigo,
             ),
-
             const SizedBox(height: 20),
-
             const Text(
               'Welcome Back!',
               style: TextStyle(
@@ -328,9 +344,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 35),
-
             TextField(
               controller: usernameController,
               decoration: const InputDecoration(
@@ -338,9 +352,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 prefixIcon: Icon(Icons.person),
               ),
             ),
-
             const SizedBox(height: 20),
-
             TextField(
               controller: passwordController,
               obscureText: hidePassword,
@@ -355,15 +367,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   onPressed: () {
                     setState(() {
-                      hidePassword = !hidePassword;
+                      hidePassword =
+                          !hidePassword;
                     });
                   },
                 ),
               ),
             ),
-
             const SizedBox(height: 10),
-
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -376,39 +387,41 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   );
                 },
-                child: const Text('Forgot Password?'),
+                child:
+                    const Text('Forgot Password?'),
               ),
             ),
-
             const SizedBox(height: 15),
-
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: loading ? null : login,
+                onPressed:
+                    loading ? null : login,
                 child: loading
                     ? const SizedBox(
                         height: 22,
                         width: 22,
-                        child: CircularProgressIndicator(
+                        child:
+                            CircularProgressIndicator(
                           strokeWidth: 2,
                         ),
                       )
                     : const Text(
                         'LOGIN',
-                        style: TextStyle(fontSize: 17),
+                        style:
+                            TextStyle(fontSize: 17),
                       ),
               ),
             ),
-
             const SizedBox(height: 15),
-
             Row(
               mainAxisAlignment:
                   MainAxisAlignment.center,
               children: [
-                const Text("Don't have an account?"),
+                const Text(
+                  "Don't have an account?",
+                ),
                 TextButton(
                   onPressed: () {
                     Navigator.push(
@@ -446,24 +459,43 @@ class RegistrationScreen extends StatefulWidget {
 
 class _RegistrationScreenState
     extends State<RegistrationScreen> {
-  final nameController = TextEditingController();
-  final usernameController = TextEditingController();
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final confirmController = TextEditingController();
+  final nameController =
+      TextEditingController();
 
-  final DatabaseHelper dbHelper = DatabaseHelper();
+  final usernameController =
+      TextEditingController();
+
+  final emailController =
+      TextEditingController();
+
+  final passwordController =
+      TextEditingController();
+
+  final confirmController =
+      TextEditingController();
+
+  final DatabaseHelper dbHelper =
+      DatabaseHelper();
 
   bool hidePassword = true;
   bool hideConfirmPassword = true;
   bool loading = false;
 
   Future<void> register() async {
-    final name = nameController.text.trim();
-    final username = usernameController.text.trim();
-    final email = emailController.text.trim();
-    final password = passwordController.text;
-    final confirmPassword = confirmController.text;
+    final name =
+        nameController.text.trim();
+
+    final username =
+        usernameController.text.trim();
+
+    final email =
+        emailController.text.trim();
+
+    final password =
+        passwordController.text;
+
+    final confirmPassword =
+        confirmController.text;
 
     if (name.isEmpty ||
         username.isEmpty ||
@@ -536,7 +568,8 @@ class _RegistrationScreenState
       return;
     }
 
-    final success = await dbHelper.registerUser(
+    final success =
+        await dbHelper.registerUser(
       name,
       username,
       email,
@@ -580,9 +613,7 @@ class _RegistrationScreenState
               size: 70,
               color: Colors.indigo,
             ),
-
             const SizedBox(height: 20),
-
             const Text(
               'Create Your Account',
               style: TextStyle(
@@ -590,9 +621,7 @@ class _RegistrationScreenState
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 30),
-
             TextField(
               controller: nameController,
               textCapitalization:
@@ -602,19 +631,16 @@ class _RegistrationScreenState
                 prefixIcon: Icon(Icons.person),
               ),
             ),
-
             const SizedBox(height: 15),
-
             TextField(
               controller: usernameController,
               decoration: const InputDecoration(
                 labelText: 'Username',
-                prefixIcon: Icon(Icons.alternate_email),
+                prefixIcon:
+                    Icon(Icons.alternate_email),
               ),
             ),
-
             const SizedBox(height: 15),
-
             TextField(
               controller: emailController,
               keyboardType:
@@ -624,15 +650,14 @@ class _RegistrationScreenState
                 prefixIcon: Icon(Icons.email),
               ),
             ),
-
             const SizedBox(height: 15),
-
             TextField(
               controller: passwordController,
               obscureText: hidePassword,
               decoration: InputDecoration(
                 labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock),
+                prefixIcon:
+                    const Icon(Icons.lock),
                 suffixIcon: IconButton(
                   icon: Icon(
                     hidePassword
@@ -641,22 +666,23 @@ class _RegistrationScreenState
                   ),
                   onPressed: () {
                     setState(() {
-                      hidePassword = !hidePassword;
+                      hidePassword =
+                          !hidePassword;
                     });
                   },
                 ),
               ),
             ),
-
             const SizedBox(height: 15),
-
             TextField(
               controller: confirmController,
-              obscureText: hideConfirmPassword,
+              obscureText:
+                  hideConfirmPassword,
               decoration: InputDecoration(
                 labelText: 'Confirm Password',
-                prefixIcon:
-                    const Icon(Icons.lock_outline),
+                prefixIcon: const Icon(
+                  Icons.lock_outline,
+                ),
                 suffixIcon: IconButton(
                   icon: Icon(
                     hideConfirmPassword
@@ -672,25 +698,26 @@ class _RegistrationScreenState
                 ),
               ),
             ),
-
             const SizedBox(height: 30),
-
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: loading ? null : register,
+                onPressed:
+                    loading ? null : register,
                 child: loading
                     ? const SizedBox(
                         height: 22,
                         width: 22,
-                        child: CircularProgressIndicator(
+                        child:
+                            CircularProgressIndicator(
                           strokeWidth: 2,
                         ),
                       )
                     : const Text(
                         'REGISTER',
-                        style: TextStyle(fontSize: 17),
+                        style:
+                            TextStyle(fontSize: 17),
                       ),
               ),
             ),
@@ -705,7 +732,8 @@ class _RegistrationScreenState
 // 4. FORGOT PASSWORD
 // ============================================================
 
-class ForgotPasswordScreen extends StatefulWidget {
+class ForgotPasswordScreen
+    extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
@@ -715,9 +743,11 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState
     extends State<ForgotPasswordScreen> {
-  final identifierController = TextEditingController();
+  final identifierController =
+      TextEditingController();
 
-  final DatabaseHelper dbHelper = DatabaseHelper();
+  final DatabaseHelper dbHelper =
+      DatabaseHelper();
 
   bool loading = false;
 
@@ -768,7 +798,8 @@ class _ForgotPasswordScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Forgot Password'),
+        title:
+            const Text('Forgot Password'),
         centerTitle: true,
       ),
       body: Padding(
@@ -776,15 +807,12 @@ class _ForgotPasswordScreenState
         child: Column(
           children: [
             const SizedBox(height: 30),
-
             const Icon(
               Icons.lock_reset,
               size: 75,
               color: Colors.indigo,
             ),
-
             const SizedBox(height: 20),
-
             const Text(
               'Reset Your Password',
               style: TextStyle(
@@ -792,37 +820,36 @@ class _ForgotPasswordScreenState
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 15),
-
             const Text(
               'Enter your registered email or username.',
               textAlign: TextAlign.center,
             ),
-
             const SizedBox(height: 30),
-
             TextField(
-              controller: identifierController,
-              decoration: const InputDecoration(
+              controller:
+                  identifierController,
+              decoration:
+                  const InputDecoration(
                 labelText: 'Email / Username',
-                prefixIcon: Icon(Icons.email),
+                prefixIcon:
+                    Icon(Icons.email),
               ),
             ),
-
             const SizedBox(height: 25),
-
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed:
-                    loading ? null : continueReset,
+                onPressed: loading
+                    ? null
+                    : continueReset,
                 child: loading
                     ? const SizedBox(
                         height: 22,
                         width: 22,
-                        child: CircularProgressIndicator(
+                        child:
+                            CircularProgressIndicator(
                           strokeWidth: 2,
                         ),
                       )
@@ -840,7 +867,8 @@ class _ForgotPasswordScreenState
 // 5. RESET PASSWORD
 // ============================================================
 
-class ResetPasswordScreen extends StatefulWidget {
+class ResetPasswordScreen
+    extends StatefulWidget {
   final String identifier;
 
   const ResetPasswordScreen({
@@ -855,15 +883,21 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState
     extends State<ResetPasswordScreen> {
-  final passwordController = TextEditingController();
-  final confirmController = TextEditingController();
+  final passwordController =
+      TextEditingController();
 
-  final DatabaseHelper dbHelper = DatabaseHelper();
+  final confirmController =
+      TextEditingController();
+
+  final DatabaseHelper dbHelper =
+      DatabaseHelper();
 
   bool loading = false;
 
   Future<void> resetPassword() async {
-    final password = passwordController.text;
+    final password =
+        passwordController.text;
+
     final confirmPassword =
         confirmController.text;
 
@@ -896,7 +930,8 @@ class _ResetPasswordScreenState
       loading = true;
     });
 
-    final success = await dbHelper.resetPassword(
+    final success =
+        await dbHelper.resetPassword(
       widget.identifier,
       password,
     );
@@ -929,7 +964,8 @@ class _ResetPasswordScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Set New Password'),
+        title:
+            const Text('Set New Password'),
         centerTitle: true,
       ),
       body: Padding(
@@ -937,52 +973,57 @@ class _ResetPasswordScreenState
         child: Column(
           children: [
             const SizedBox(height: 30),
-
             const Icon(
               Icons.password,
               size: 70,
               color: Colors.indigo,
             ),
-
             const SizedBox(height: 25),
-
             TextField(
-              controller: passwordController,
+              controller:
+                  passwordController,
               obscureText: true,
-              decoration: const InputDecoration(
+              decoration:
+                  const InputDecoration(
                 labelText: 'New Password',
-                prefixIcon: Icon(Icons.lock),
+                prefixIcon:
+                    Icon(Icons.lock),
               ),
             ),
-
             const SizedBox(height: 20),
-
             TextField(
-              controller: confirmController,
+              controller:
+                  confirmController,
               obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Confirm New Password',
-                prefixIcon: Icon(Icons.lock_outline),
+              decoration:
+                  const InputDecoration(
+                labelText:
+                    'Confirm New Password',
+                prefixIcon: Icon(
+                  Icons.lock_outline,
+                ),
               ),
             ),
-
             const SizedBox(height: 30),
-
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed:
-                    loading ? null : resetPassword,
+                onPressed: loading
+                    ? null
+                    : resetPassword,
                 child: loading
                     ? const SizedBox(
                         height: 22,
                         width: 22,
-                        child: CircularProgressIndicator(
+                        child:
+                            CircularProgressIndicator(
                           strokeWidth: 2,
                         ),
                       )
-                    : const Text('SET PASSWORD'),
+                    : const Text(
+                        'SET PASSWORD',
+                      ),
               ),
             ),
           ],
@@ -996,7 +1037,8 @@ class _ResetPasswordScreenState
 // 6. HOME SCREEN
 // ============================================================
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen
+    extends StatelessWidget {
   final int userId;
   final String name;
 
@@ -1010,7 +1052,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SocialShieldAI'),
+        title:
+            const Text('SocialShieldAI'),
         centerTitle: true,
       ),
       body: Padding(
@@ -1024,9 +1067,7 @@ class HomeScreen extends StatelessWidget {
               size: 90,
               color: Colors.indigo,
             ),
-
             const SizedBox(height: 25),
-
             Text(
               'Hello, $name 👋',
               textAlign: TextAlign.center,
@@ -1035,25 +1076,23 @@ class HomeScreen extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 15),
-
             const Text(
               "Let's detect suspicious profiles.",
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 18),
             ),
-
             const SizedBox(height: 35),
-
             SizedBox(
               width: double.infinity,
               height: 55,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.search),
+                icon:
+                    const Icon(Icons.search),
                 label: const Text(
                   "LET'S START",
-                  style: TextStyle(fontSize: 17),
+                  style:
+                      TextStyle(fontSize: 17),
                 ),
                 onPressed: () {
                   Navigator.push(
@@ -1068,23 +1107,25 @@ class HomeScreen extends StatelessWidget {
                 },
               ),
             ),
-
             const SizedBox(height: 15),
-
             SizedBox(
               width: double.infinity,
               height: 50,
               child: OutlinedButton.icon(
-                icon: const Icon(Icons.history),
+                icon: const Icon(
+                  Icons.history,
+                ),
                 label: const Text(
                   'SCAN HISTORY',
-                  style: TextStyle(fontSize: 16),
+                  style:
+                      TextStyle(fontSize: 16),
                 ),
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => HistoryScreen(
+                      builder: (_) =>
+                          HistoryScreen(
                         userId: userId,
                       ),
                     ),
@@ -1093,7 +1134,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ],
-        )
+        ),
       ),
     );
   }
@@ -1103,7 +1144,8 @@ class HomeScreen extends StatelessWidget {
 // 7. PROFILE TESTING LAB
 // ============================================================
 
-class TestingLabScreen extends StatelessWidget {
+class TestingLabScreen
+    extends StatelessWidget {
   final int userId;
 
   const TestingLabScreen({
@@ -1115,7 +1157,8 @@ class TestingLabScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile Testing Lab'),
+        title:
+            const Text('Profile Testing Lab'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -1123,15 +1166,12 @@ class TestingLabScreen extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 25),
-
             const Icon(
               Icons.search,
               size: 75,
               color: Colors.indigo,
             ),
-
             const SizedBox(height: 15),
-
             const Text(
               'Analyze X Profile',
               style: TextStyle(
@@ -1139,32 +1179,31 @@ class TestingLabScreen extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 10),
-
             const Text(
               'Paste a public X profile URL and let '
               'SocialShieldAI analyze it using AI.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16),
             ),
-
             const SizedBox(height: 35),
-
             SizedBox(
               width: double.infinity,
               height: 60,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.link),
+                icon:
+                    const Icon(Icons.link),
                 label: const Text(
                   'PASTE X PROFILE URL',
-                  style: TextStyle(fontSize: 16),
+                  style:
+                      TextStyle(fontSize: 16),
                 ),
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => XProfileUrlScreen(
+                      builder: (_) =>
+                          XProfileUrlScreen(
                         userId: userId,
                       ),
                     ),
@@ -1172,13 +1211,13 @@ class TestingLabScreen extends StatelessWidget {
                 },
               ),
             ),
-
             const SizedBox(height: 25),
-
             Card(
-              color: Colors.indigo.shade50,
+              color:
+                  Colors.indigo.shade50,
               child: const Padding(
-                padding: EdgeInsets.all(15),
+                padding:
+                    EdgeInsets.all(15),
                 child: Row(
                   crossAxisAlignment:
                       CrossAxisAlignment.start,
@@ -1206,11 +1245,13 @@ class TestingLabScreen extends StatelessWidget {
     );
   }
 }
+
 // ============================================================
 // 8. X PROFILE URL
 // ============================================================
 
-class XProfileUrlScreen extends StatefulWidget {
+class XProfileUrlScreen
+    extends StatefulWidget {
   final int userId;
 
   const XProfileUrlScreen({
@@ -1225,13 +1266,16 @@ class XProfileUrlScreen extends StatefulWidget {
 
 class _XProfileUrlScreenState
     extends State<XProfileUrlScreen> {
-  final urlController = TextEditingController();
+  final urlController =
+      TextEditingController();
 
   bool loading = false;
 
   String? extractUsername(String url) {
     try {
-      final uri = Uri.parse(url.trim());
+      final uri = Uri.parse(
+        url.trim(),
+      );
 
       if (uri.scheme != 'https' &&
           uri.scheme != 'http') {
@@ -1245,7 +1289,8 @@ class _XProfileUrlScreenState
         return null;
       }
 
-      final segments = uri.pathSegments;
+      final segments =
+          uri.pathSegments;
 
       if (segments.isEmpty) {
         return null;
@@ -1253,7 +1298,6 @@ class _XProfileUrlScreenState
 
       final username = segments.first;
 
-      // Reject X/Twitter system pages.
       const blockedPaths = [
         'home',
         'explore',
@@ -1283,7 +1327,8 @@ class _XProfileUrlScreenState
   }
 
   void continueToAnalysis() {
-    final url = urlController.text.trim();
+    final url =
+        urlController.text.trim();
 
     if (url.isEmpty) {
       showMessage(
@@ -1293,7 +1338,8 @@ class _XProfileUrlScreenState
       return;
     }
 
-    final username = extractUsername(url);
+    final username =
+        extractUsername(url);
 
     if (username == null) {
       showMessage(
@@ -1303,26 +1349,24 @@ class _XProfileUrlScreenState
       return;
     }
 
-    // Temporary step.
-    // Later this will call the backend,
-    // which will fetch the actual X profile data.
-
     Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (_) => AnalysisLoadingScreen(
-      userId: widget.userId,
-      username: username,
-    ),
-  ),
-);
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            AnalysisLoadingScreen(
+          userId: widget.userId,
+          username: username,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('X Profile'),
+        title:
+            const Text('X Profile'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -1330,15 +1374,12 @@ class _XProfileUrlScreenState
         child: Column(
           children: [
             const SizedBox(height: 25),
-
             const Icon(
               Icons.link,
               size: 75,
               color: Colors.indigo,
             ),
-
             const SizedBox(height: 20),
-
             const Text(
               'Paste X Profile URL',
               style: TextStyle(
@@ -1346,32 +1387,32 @@ class _XProfileUrlScreenState
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 12),
-
             const Text(
               'Enter the URL of the public X profile '
               'you want to analyze.',
               textAlign: TextAlign.center,
             ),
-
             const SizedBox(height: 30),
-
             TextField(
-              controller: urlController,
-              keyboardType: TextInputType.url,
-              decoration: const InputDecoration(
-                labelText: 'X Profile URL',
+              controller:
+                  urlController,
+              keyboardType:
+                  TextInputType.url,
+              decoration:
+                  const InputDecoration(
+                labelText:
+                    'X Profile URL',
                 hintText:
                     'https://x.com/username',
-                prefixIcon: Icon(Icons.link),
+                prefixIcon:
+                    Icon(Icons.link),
               ),
             ),
-
             const SizedBox(height: 15),
-
             const Align(
-              alignment: Alignment.centerLeft,
+              alignment:
+                  Alignment.centerLeft,
               child: Text(
                 'Example: https://x.com/username',
                 style: TextStyle(
@@ -1379,35 +1420,40 @@ class _XProfileUrlScreenState
                 ),
               ),
             ),
-
             const SizedBox(height: 30),
-
             SizedBox(
               width: double.infinity,
               height: 55,
-              child: ElevatedButton.icon(
-                onPressed:
-                    loading ? null : continueToAnalysis,
-                icon: const Icon(Icons.psychology),
+              child:
+                  ElevatedButton.icon(
+                onPressed: loading
+                    ? null
+                    : continueToAnalysis,
+                icon: const Icon(
+                  Icons.psychology,
+                ),
                 label: const Text(
                   'ANALYZE PROFILE',
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
-
             const SizedBox(height: 25),
-
             Card(
-              color: Colors.indigo.shade50,
+              color:
+                  Colors.indigo.shade50,
               child: const Padding(
-                padding: EdgeInsets.all(15),
+                padding:
+                    EdgeInsets.all(15),
                 child: Text(
                   'SocialShieldAI will automatically '
                   'retrieve available profile information '
                   'through the backend before running '
                   'the AI model.',
-                  textAlign: TextAlign.center,
+                  textAlign:
+                      TextAlign.center,
                 ),
               ),
             ),
@@ -1418,13 +1464,12 @@ class _XProfileUrlScreenState
   }
 }
 
-
-
 // ============================================================
-// 10. PROFILE DETAILS
+// 9. PROFILE DETAILS
 // ============================================================
 
-class ProfileDetailsScreen extends StatelessWidget {
+class ProfileDetailsScreen
+    extends StatelessWidget {
   final int userId;
   final ProfileData profile;
 
@@ -1440,7 +1485,8 @@ class ProfileDetailsScreen extends StatelessWidget {
     String value,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
+      padding:
+          const EdgeInsets.symmetric(
         vertical: 8,
       ),
       child: Row(
@@ -1453,15 +1499,19 @@ class ProfileDetailsScreen extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
+              style:
+                  const TextStyle(
+                fontWeight:
+                    FontWeight.w500,
               ),
             ),
           ),
           Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
+            style:
+                const TextStyle(
+              fontWeight:
+                  FontWeight.bold,
             ),
           ),
         ],
@@ -1469,11 +1519,14 @@ class ProfileDetailsScreen extends StatelessWidget {
     );
   }
 
-  void analyze(BuildContext context) {
+  void analyze(
+    BuildContext context,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AnalysisLoadingScreen(
+        builder: (_) =>
+            AnalysisLoadingScreen(
           userId: userId,
           username: profile.username,
         ),
@@ -1485,11 +1538,13 @@ class ProfileDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile Details'),
+        title:
+            const Text('Profile Details'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding:
+            const EdgeInsets.all(20),
         child: Column(
           children: [
             CircleAvatar(
@@ -1502,23 +1557,21 @@ class ProfileDetailsScreen extends StatelessWidget {
                 color: Colors.indigo,
               ),
             ),
-
             const SizedBox(height: 15),
-
             Text(
               '@${profile.username}',
               style: const TextStyle(
                 fontSize: 23,
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 25),
-
             Card(
               elevation: 3,
               child: Padding(
-                padding: const EdgeInsets.all(18),
+                padding:
+                    const EdgeInsets.all(18),
                 child: Column(
                   children: [
                     detailRow(
@@ -1544,14 +1597,16 @@ class ProfileDetailsScreen extends StatelessWidget {
                     detailRow(
                       Icons.account_circle,
                       'Profile Picture',
-                      profile.hasProfilePicture == 1
+                      profile.hasProfilePicture ==
+                              1
                           ? 'Yes'
                           : 'No',
                     ),
                     detailRow(
                       Icons.lock,
                       'Account',
-                      profile.isPrivate == 1
+                      profile.isPrivate ==
+                              1
                           ? 'Private'
                           : 'Public',
                     ),
@@ -1569,18 +1624,22 @@ class ProfileDetailsScreen extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 25),
-
             SizedBox(
               width: double.infinity,
               height: 55,
-              child: ElevatedButton.icon(
-                onPressed: () => analyze(context),
-                icon: const Icon(Icons.psychology),
+              child:
+                  ElevatedButton.icon(
+                onPressed: () =>
+                    analyze(context),
+                icon: const Icon(
+                  Icons.psychology,
+                ),
                 label: const Text(
                   'ANALYZE WITH AI',
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
@@ -1592,10 +1651,11 @@ class ProfileDetailsScreen extends StatelessWidget {
 }
 
 // ============================================================
-// 11. AI LOADING
+// 10. AI LOADING
 // ============================================================
 
-class AnalysisLoadingScreen extends StatefulWidget {
+class AnalysisLoadingScreen
+    extends StatefulWidget {
   final int userId;
   final String username;
 
@@ -1606,20 +1666,23 @@ class AnalysisLoadingScreen extends StatefulWidget {
   });
 
   @override
-  State<AnalysisLoadingScreen> createState() =>
-      _AnalysisLoadingScreenState();
+  State<AnalysisLoadingScreen>
+      createState() =>
+          _AnalysisLoadingScreenState();
 }
 
 class _AnalysisLoadingScreenState
     extends State<AnalysisLoadingScreen> {
+  final ApiService apiService =
+      ApiService();
 
-  final ApiService apiService = ApiService();
-
-  String status = 'Preparing X profile...';
+  String status =
+      'Preparing X profile...';
 
   @override
   void initState() {
     super.initState();
+
     analyzeProfile();
   }
 
@@ -1631,18 +1694,26 @@ class _AnalysisLoadingScreenState
     if (!mounted) return;
 
     setState(() {
-      status = 'Fetching X profile data...';
+      status =
+          'Fetching X profile data...';
     });
 
     try {
-      final result = await apiService.analyzeXProfile(
+      // ======================================================
+      // ACTUAL BACKEND/API CALL
+      // ======================================================
+
+      final result =
+          await apiService.analyzeXProfile(
         widget.username,
+        widget.userId,
       );
 
       if (!mounted) return;
 
       setState(() {
-        status = 'AI analysis completed!';
+        status =
+            'AI analysis completed!';
       });
 
       await Future.delayed(
@@ -1651,22 +1722,72 @@ class _AnalysisLoadingScreenState
 
       if (!mounted) return;
 
+      // ======================================================
+      // CREATE PROFILE DATA
+      // ======================================================
+
+      final profile =
+          ProfileData(
+        username: widget.username,
+        followers:
+            _readInt(
+              result,
+              [
+                'followers',
+                'userFollowerCount',
+              ],
+            ),
+        following:
+            _readInt(
+              result,
+              [
+                'following',
+                'userFollowingCount',
+              ],
+            ),
+        biography:
+            _readString(
+              result,
+              [
+                'biography',
+                'bio',
+              ],
+            ),
+        mediaCount:
+            _readInt(
+              result,
+              [
+                'mediaCount',
+                'userMediaCount',
+              ],
+            ),
+        hasProfilePicture:
+            _readInt(
+              result,
+              [
+                'hasProfilePicture',
+                'userHasProfilPic',
+              ],
+            ),
+        isPrivate:
+            _readInt(
+              result,
+              [
+                'isPrivate',
+                'userIsPrivate',
+              ],
+            ),
+      );
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => AnalysisResultScreen(
-  userId: widget.userId,
-  profile: ProfileData(
-    username: widget.username,
-    followers: 0,
-    following: 0,
-    biography: '',
-    mediaCount: 0,
-    hasProfilePicture: 0,
-    isPrivate: 0,
-  ),
-  result: result,
-),
+          builder: (_) =>
+              AnalysisResultScreen(
+            userId: widget.userId,
+            profile: profile,
+            result: result,
+          ),
         ),
       );
     } catch (e) {
@@ -1682,16 +1803,56 @@ class _AnalysisLoadingScreenState
     }
   }
 
+  int _readInt(
+    Map<String, dynamic> data,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final value = data[key];
+
+      if (value is int) {
+        return value;
+      }
+
+      if (value is num) {
+        return value.toInt();
+      }
+
+      if (value is String) {
+        return int.tryParse(value) ?? 0;
+      }
+    }
+
+    return 0;
+  }
+
+  String _readString(
+    Map<String, dynamic> data,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final value = data[key];
+
+      if (value != null) {
+        return value.toString();
+      }
+    }
+
+    return '';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Analysis'),
+        title:
+            const Text('AI Analysis'),
         centerTitle: true,
       ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(30),
+          padding:
+              const EdgeInsets.all(30),
           child: Column(
             mainAxisAlignment:
                 MainAxisAlignment.center,
@@ -1701,35 +1862,31 @@ class _AnalysisLoadingScreenState
                 size: 90,
                 color: Colors.indigo,
               ),
-
               const SizedBox(height: 30),
-
               const CircularProgressIndicator(),
-
               const SizedBox(height: 30),
-
               const Text(
                 'AI is analyzing the X profile...',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.bold,
+                  fontWeight:
+                      FontWeight.bold,
                 ),
               ),
-
               const SizedBox(height: 15),
-
               Text(
                 status,
-                textAlign: TextAlign.center,
+                textAlign:
+                    TextAlign.center,
               ),
-
               const SizedBox(height: 10),
-
               Text(
                 '@${widget.username}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
+                style:
+                    const TextStyle(
+                  fontWeight:
+                      FontWeight.bold,
                   color: Colors.indigo,
                 ),
               ),
@@ -1742,10 +1899,11 @@ class _AnalysisLoadingScreenState
 }
 
 // ============================================================
-// 12. ANALYSIS RESULT
+// 11. ANALYSIS RESULT
 // ============================================================
 
-class AnalysisResultScreen extends StatelessWidget {
+class AnalysisResultScreen
+    extends StatelessWidget {
   final int userId;
   final ProfileData profile;
   final Map<String, dynamic> result;
@@ -1760,11 +1918,15 @@ class AnalysisResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prediction =
-        result['prediction']?.toString() ?? 'UNKNOWN';
+        result['prediction']
+                ?.toString() ??
+            'UNKNOWN';
 
     final confidence =
         result['confidence'] is num
-            ? (result['confidence'] as num).toDouble()
+            ? (result['confidence']
+                    as num)
+                .toDouble()
             : 0.0;
 
     final confidenceLevel =
@@ -1779,15 +1941,18 @@ class AnalysisResultScreen extends StatelessWidget {
               )
             : <String>[];
 
-    final isFake = prediction == 'FAKE';
+    final isFake =
+        prediction == 'FAKE';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Analysis Result'),
+        title:
+            const Text('Analysis Result'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding:
+            const EdgeInsets.all(20),
         child: Column(
           children: [
             Icon(
@@ -1799,58 +1964,59 @@ class AnalysisResultScreen extends StatelessWidget {
                   ? Colors.orange
                   : Colors.green,
             ),
-
             const SizedBox(height: 15),
-
             Text(
               prediction,
               style: TextStyle(
                 fontSize: 32,
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
                 color: isFake
                     ? Colors.orange
                     : Colors.green,
               ),
             ),
-
             const SizedBox(height: 10),
-
             Text(
               '@${profile.username}',
-              style: const TextStyle(
+              style:
+                  const TextStyle(
                 fontSize: 18,
               ),
             ),
-
             const SizedBox(height: 25),
-
             Card(
               elevation: 3,
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding:
+                    const EdgeInsets.all(20),
                 child: Column(
                   children: [
                     const Text(
                       'AI Confidence',
                       style: TextStyle(
                         fontSize: 17,
-                        fontWeight: FontWeight.bold,
+                        fontWeight:
+                            FontWeight.bold,
                       ),
                     ),
-
-                    const SizedBox(height: 10),
-
+                    const SizedBox(
+                      height: 10,
+                    ),
                     Text(
                       '${confidence.toStringAsFixed(2)}%',
-                      style: const TextStyle(
+                      style:
+                          const TextStyle(
                         fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.indigo,
+                        fontWeight:
+                            FontWeight.bold,
+                        color:
+                            Colors.indigo,
                       ),
                     ),
-
-                    const SizedBox(height: 10),
-
+                    const SizedBox(
+                      height: 10,
+                    ),
                     Text(
                       'Confidence Level: '
                       '$confidenceLevel',
@@ -1859,51 +2025,62 @@ class AnalysisResultScreen extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            Align(
-              alignment: Alignment.centerLeft,
+            const Align(
+              alignment:
+                  Alignment.centerLeft,
               child: Text(
                 'Risk Indicators',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontWeight:
+                      FontWeight.bold,
                 ),
               ),
             ),
-
             const SizedBox(height: 10),
-
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(15),
-                child: Column(
-                  children: factors.map(
-                    (factor) {
-                      return ListTile(
-                        contentPadding:
-                            EdgeInsets.zero,
-                        leading: Icon(
-                          Icons.info_outline,
-                          color: isFake
-                              ? Colors.orange
-                              : Colors.indigo,
-                        ),
-                        title: Text(factor),
-                      );
-                    },
-                  ).toList(),
-                ),
+                padding:
+                    const EdgeInsets.all(15),
+                child: factors.isEmpty
+                    ? const Text(
+                        'No specific risk factors returned.',
+                      )
+                    : Column(
+                        children:
+                            factors.map(
+                          (factor) {
+                            return ListTile(
+                              contentPadding:
+                                  EdgeInsets.zero,
+                              leading:
+                                  Icon(
+                                Icons
+                                    .info_outline,
+                                color: isFake
+                                    ? Colors
+                                        .orange
+                                    : Colors
+                                        .indigo,
+                              ),
+                              title:
+                                  Text(
+                                factor,
+                              ),
+                            );
+                          },
+                        ).toList(),
+                      ),
               ),
             ),
-
             const SizedBox(height: 20),
-
             Card(
-              color: Colors.indigo.shade50,
+              color:
+                  Colors.indigo.shade50,
               child: Padding(
-                padding: const EdgeInsets.all(15),
+                padding:
+                    const EdgeInsets.all(15),
                 child: Text(
                   isFake
                       ? 'This profile shows indicators '
@@ -1914,13 +2091,12 @@ class AnalysisResultScreen extends StatelessWidget {
                       : 'The AI model did not detect '
                         'major fake-profile indicators '
                         'in this profile.',
-                  textAlign: TextAlign.center,
+                  textAlign:
+                      TextAlign.center,
                 ),
               ),
             ),
-
             const SizedBox(height: 25),
-
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -1933,15 +2109,19 @@ class AnalysisResultScreen extends StatelessWidget {
                     userId: userId,
                     profileUsername:
                         profile.username,
-                    prediction: prediction,
-                    confidence: confidence,
+                    prediction:
+                        prediction,
+                    confidence:
+                        confidence,
                     confidenceLevel:
                         confidenceLevel,
                     riskFactors:
                         factors.join(' | '),
                   );
 
-                  if (!context.mounted) return;
+                  if (!context.mounted) {
+                    return;
+                  }
 
                   showMessage(
                     context,
@@ -1953,9 +2133,7 @@ class AnalysisResultScreen extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 15),
-
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -1964,7 +2142,6 @@ class AnalysisResultScreen extends StatelessWidget {
                   Navigator.popUntil(
                     context,
                     (route) =>
-                        route.settings.name == null ||
                         route.isFirst,
                   );
                 },
@@ -1979,4 +2156,3 @@ class AnalysisResultScreen extends StatelessWidget {
     );
   }
 }
-
